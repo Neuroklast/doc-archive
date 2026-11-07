@@ -43,6 +43,6 @@ The server interface lives in [src/server/storage/contracts.ts](src/server/stora
 
 ## Development
 
-The Next.js scaffold now provides `npm run lint`, `npm run typecheck`, `npm test` and `npm run build`. See [local setup](docs/LOCAL_SETUP.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [Google OAuth](docs/GOOGLE_OAUTH.md). The app requires a Neon database, the private owner and setup secrets, and Google Cloud OAuth web client credentials. The scan/upload/search paths are now implemented, but they still require actual database migrations, live Google Drive OAuth/CORS tests and production review. Dependency lockfile generation remains a production-readiness task.
+The Next.js scaffold now provides `npm run lint`, `npm run typecheck`, `npm test` and `npm run build`. See [local setup](docs/LOCAL_SETUP.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [Google OAuth](docs/GOOGLE_OAUTH.md). The app requires a Neon database, the private owner and setup secrets, and Google Cloud OAuth web client credentials. The scan/upload/search paths are implemented, with reviewed migration files checked into the repository. They still require applying that migration to a real Neon database, live Google Drive OAuth/CORS tests and production review. The exact dependency lockfile and initial Drizzle migration are now committed. Apply the migration only after reviewing SQL and preparing a dedicated database.
 
 Personal scans, generated PDFs, OCR content, backups, environment files and API credentials **must never be committed to Git**.

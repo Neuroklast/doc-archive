@@ -27,9 +27,10 @@
 - Metadata-only integrity plus actual PDF signature is **not** cryptographic equality to the client SHA-256; the expected hash is a client claim.
 - Imported PDFs do not receive an extra text layer or OCR-indexed body. Scanned image PDFs have a text layer only for recognized words supported by the embedded PDF font.
 - No Vercel production deployment or Google/Neon credentials have been configured.
+- The initial Drizzle SQL migration, schema snapshot and package-lock.json are committed. CI now uses npm ci and rejects uncommitted generated migration changes.
 
 ## Next work
-1. Commit reviewed Drizzle migrations and dependency lockfile; run a live DB migration in an isolated environment.
+1. Apply the committed, reviewed Drizzle migration to a new isolated Neon database and verify schema/rollback procedures.
 2. Test Google OAuth, CORS, transfer, download and search using synthetic documents on a real preview deployment.
 3. Persist recovery of interrupted sessions, reconcile orphan files and drive-side changes.
 4. Implement folder synchronization, categorization, PDF text extraction, advanced scanning/cropping and secure backup/export.

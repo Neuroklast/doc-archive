@@ -5,7 +5,7 @@
 Node.js 22+, npm, a newly provisioned Neon PostgreSQL database, and a Google Cloud OAuth web application with Drive API enabled.
 
 ```sh
-npm install
+npm ci
 cp .env.example .env.local
 ```
 
@@ -24,12 +24,12 @@ Google callback for local development: `http://localhost:3000/api/google/callbac
 
 ```sh
 npm run db:generate
-# Inspect SQL in drizzle/ and take a backup before changes.
+# CI rejects schema drift. Inspect the committed drizzle/0000_*.sql before applying.
 npm run db:migrate
 npm run dev
 ```
 
-Use the ordered Drizzle migration chain once committed. Until then, generate and review migrations in a clean development database. Never push or reset an existing production schema blindly.
+Use the committed ordered Drizzle migration chain. Run it on an empty development database first; never push or reset an existing production schema blindly.
 
 ## First run
 
