@@ -15,7 +15,7 @@ Generate nonsensitive mock letters, bills, insurance notices and IDs. Do not use
 
 ## Integration
 - Authenticated create/complete/move/delete/restore and search endpoints.
-- 401 for anonymous, deny foreign user IDs, expired upload session, repeated completion, inconsistent R2 bytes, failed DB transaction and orphan reconciliation.
+- 401 for anonymous, deny foreign user IDs, expired/revoked Google OAuth, expired upload session, repeated completion, inconsistent Drive file size/MIME/checksum evidence, failed DB transaction and orphan reconciliation.
 - PostgreSQL German full-text search, pagination, title/sender matching and cross-user result isolation.
 - Google Drive API mocked in contract tests and exercised with synthetic files and a dedicated test Google account. Include Drive scope, OAuth state/PKCE, token rotation/revocation, resumable 308/range/chunk behavior, quota/429, external rename/move/trash/delete and reconnect. R2 is not required for MVP.
 
