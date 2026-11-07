@@ -13,6 +13,10 @@ Every async operation has idle/loading/progress/success/error/cancelled variants
 - Upload/processing progress per document and per page. Provide retry on network failure without duplicate documents.
 - OCR suggestions never auto-change the source image; suspected sender, date and category are editable.
 
+## Google Drive connection UX
+
+Show a clear **Connect Google Drive** flow separate from app login. Explain per-file `drive.file` scope and that files are visible in the owner's Drive. Show interrupted authorization, revoked/expired grant, quota exceeded, upload retry, last synchronization and conflict states. Disconnect removes the app's Google grant but does not delete the user's Drive documents. Reconnect must not silently duplicate existing PDFs.
+
 ## Search and management
 - Search filters survive reload/back navigation when appropriate, without exposing OCR text in sensitive URLs.
 - Long-running preview extraction never blocks folder navigation.

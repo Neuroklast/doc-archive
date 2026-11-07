@@ -1,6 +1,8 @@
-# Private Cloudflare R2 storage
+# Optional future Cloudflare R2 storage
 
-Adapted from agent-documents/stack/cloudflare-r2.md. DOC ARCHIVE stores **private user files only**.
+> **Not part of the Google Drive-first MVP.** Enable only as a separately configured provider through [the shared contract](../docs/STORAGE_PROVIDER.md). No automatic backup, replication or migration to R2.
+
+Adapted from agent-documents/stack/cloudflare-r2.md. These rules apply only **if** a future R2 adapter is implemented and explicitly enabled. DOC ARCHIVE stores private files only.
 
 ## Object keys
 Generate opaque server-controlled keys such as `users/{user_uuid}/objects/{random_uuid}.pdf`. Keep folders as PostgreSQL metadata, not path segments. Never use original filenames, addresses or document titles in object keys. Database stores keys, checksum, MIME, verified size and ownership. Never store permanent public URLs.
