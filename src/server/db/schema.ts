@@ -82,7 +82,14 @@ export const folders = pgTable("folders", {
   driveFolderId: text("drive_folder_id"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [index("folders_owner_parent_idx").on(t.userId, t.parentId)]);
+}, (t) => [
+  index("folders_owner_parent_idx").on(t.userId, t.parentId),
+  uniqueIndex("folders_owner_parent_name_unique").on(
+    t.userId,
+    sql`coalesce(${t.parentId}::text, '')`,
+    sql`lower(${t.name})`,
+  ),
+]);
 
 export const documents = pgTable("documents", {
   id: uuid("id").defaultRandom().primaryKey(),
