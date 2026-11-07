@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   generate:
-    if: github.repository == 'Neuroklast/doc-archive' && !contains(github.event.head_commit.message, 'build: generate folder migration')
+    if: github.repository == 'Neuroklast/doc-archive'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
