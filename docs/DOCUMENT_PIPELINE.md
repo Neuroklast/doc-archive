@@ -32,10 +32,14 @@ Extract potential sender, subject/title, document date, classification, referenc
 Initial folder examples: `Behörden`, `Versicherungen`, `Finanzen`, `Verträge`, `Gesundheit`, `Arbeit`, `Sonstiges`. Folders are user-editable, never dictated by a hardcoded rigid taxonomy. Do not infer sensitive diagnoses or make decisions based on medical letter content.
 
 ## 6. Upload/finalization
-- Compute checksum for known processed bytes, request authenticated upload tickets, PUT files directly into private R2.
-- Complete only after server validates uploaded object and associated user/session; reconcile DB/R2 failures.
-- Show distinct states for `uploaded`, `processing` and `archived`. A local PDF being generated is not yet backed up.
+- Compute a local checksum for prepared bytes, request an authenticated Google Drive upload session via the server, then transfer the PDF from browser directly to Google Drive with its resumable session URI. No OAuth token is sent to the browser.
+- Complete only after the server verifies Drive file ID, owning Google connection, parent folder, MIME and size, with actual-content hash verification when required. A browser checksum alone is not sufficient; reconcile Drive/Neon failures.
+- Show distinct states for `uploaded`, `processing`, `needs_reconnect`, `missing` and `archived`. A local PDF being generated, or a Drive upload pending database commit, is not yet durably indexed.
 - Deleting a page during local editing must not mutate a previously archived document.
+
+## Drive sync and visible folders
+
+Mirror logical archive folders into real subfolders of the user's Google Drive DOC ARCHIVE folder. New PDFs stay accessible via Drive, but external rename/move/trash actions require reconciliation and must never silently delete local metadata. Drive account disconnection must preserve the archive index and offer reconnect.
 
 ## 7. QA
 Use synthetic sample documents: blurred/rotated/creased scans, faint print, black-and-white, colored seal, handwritten annotation, two-sided/multipage, PDF with text, PDF with images, bad file, large photo.
