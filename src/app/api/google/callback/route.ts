@@ -48,6 +48,12 @@ export async function GET(request: Request) {
       eq(storageConnections.provider, "google_drive"),
     )).limit(1);
 
+    // Never replace a linked account with another Google account. Existing document IDs
+    // and folder mappings would then point to the wrong owner's Drive.
+    if (existing && existing.providerAccountId !== driveAccount.id) {
+      return back(request, "different_account");
+    }
+
     // Reject missing offline permission unless we already hold a token for this exact account.
     const canReuse = existing?.providerAccountId === driveAccount.id &&
       existing.refreshTokenEncrypted.length > 0;

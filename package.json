@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mts",
     "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {

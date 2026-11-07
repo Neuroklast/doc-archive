@@ -7,7 +7,7 @@ import ArchiveShell from "./shell";
 
 export const dynamic = "force-dynamic";
 
-export default async function ArchivePage() {
+export default async function ArchivePage({ searchParams }: { searchParams: Promise<{ drive?: string }> }) {
   const session = await getSession();
   if (!session) redirect("/login");
   const db = getDb();
@@ -24,7 +24,13 @@ export default async function ArchivePage() {
       .orderBy(desc(documents.createdAt)).limit(25),
   ]);
 
+  const params = await searchParams;
+  const notice = params.drive === "failed" ? "Google Drive konnte nicht verbunden werden. Prüfe die Berechtigungen und versuche es erneut." :
+    params.drive === "different_account" ? "Ein anderes Google-Konto ist bereits verbunden. Ein Kontowechsel würde bestehende Dateiverknüpfungen beschädigen." :
+    params.drive === "connected" ? "Google Drive wurde verbunden." : null;
+
   return <ArchiveShell
+    notice={notice}
     displayName={session.user.name}
     connected={connections[0]?.status === "connected"}
     connectionStatus={connections[0]?.status ?? "not_connected"}

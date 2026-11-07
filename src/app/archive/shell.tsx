@@ -14,6 +14,7 @@ type Item = {
 
 export default function ArchiveShell(props: {
   displayName: string;
+  notice: string | null;
   connected: boolean;
   connectionStatus: string;
   accountLabel: string | null;
@@ -115,7 +116,7 @@ export default function ArchiveShell(props: {
           {props.connected && <button type="button" className="text-button danger" onClick={disconnect} disabled={busy}>Verbindung trennen</button>}
         </div>
       </section>
-      {message && <div className="feedback" role="status">{message}</div>}
+      {(message || props.notice) && <div className="feedback" role="status">{message || props.notice}</div>}
       <footer className="content-footer">DOC ARCHIVE · Privates Dokumentenarchiv · Entwicklungsstand Phase 1</footer>
     </main>
   </div>;
