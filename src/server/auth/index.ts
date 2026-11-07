@@ -19,7 +19,7 @@ export const auth = betterAuth({
         before: async (candidate, ctx) => {
           const owner = process.env.ARCHIVE_OWNER_EMAIL?.trim().toLowerCase();
           const expected = process.env.ARCHIVE_SETUP_SECRET ?? "";
-          const supplied = ctx.request?.headers.get("x-archive-setup-token") ?? "";
+          const supplied = ctx?.request?.headers.get("x-archive-setup-token") ?? "";
           // Owning the email address alone is not sufficient to seize initial registration.
           if (!owner || candidate.email.toLowerCase() !== owner ||
               expected.length < 32 || supplied.length !== expected.length ||
