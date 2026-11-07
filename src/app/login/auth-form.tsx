@@ -59,7 +59,7 @@ export default function AuthForm() {
         <input type="password" autoComplete="off" minLength={32} required
           value={setupToken} onChange={e => setSetupToken(e.target.value)} />
       </label>}
-      {error && <p className="form-error" role="alert">{error}</p>
+      {error && <p className="form-error" role="alert">{error}</p>}
       <button className="button button-primary" type="submit" disabled={pending}>
         {pending ? "Wird geprüft …" : create ? "Konto erstellen" : "Anmelden"}
       </button>
