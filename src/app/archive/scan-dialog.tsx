@@ -33,14 +33,15 @@ export default function ScanDialog({ onClose, onSaved }: {
   useEffect(() => {
     initialFocus.current?.focus();
     const urls = previews.current;
+    return () => { for (const url of urls) URL.revokeObjectURL(url); };
+  }, []);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !busy && !ticket) onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      for (const url of urls) URL.revokeObjectURL(url);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [busy, ticket, onClose]);
 
   function updatePages(change: (current: LocalPage[]) => LocalPage[]) {
