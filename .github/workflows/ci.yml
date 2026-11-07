@@ -24,3 +24,11 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: generated-schema-and-lock
+          path: |
+            package-lock.json
+            drizzle/
+          retention-days: 3
