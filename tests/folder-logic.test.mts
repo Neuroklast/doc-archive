@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { depthOf, folderName, validFolderId } from "../src/server/folders/logic.ts";
+import { depthOf, folderName, validFolderId } from "../src/lib/document/folder-logic.ts";
 
 test("folder names reject traversal and path separators", () => {
   for (const bad of ["", ".", "..", "a/b", "a\\b", "x\nname", " ".repeat(8)]) {
