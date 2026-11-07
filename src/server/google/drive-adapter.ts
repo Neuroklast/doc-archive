@@ -141,6 +141,27 @@ export class GoogleDriveAdapter implements StorageProviderAdapter {
     if (args.expectedObject && (args.expectedObject.connectionId !== row.id ||
         args.expectedObject.providerObjectId !== file.id ||
         args.expectedObject.provider !== this.provider)) throw new Error("Unexpected Drive file");
+    // Verify actual bytes begin as PDF, not just the client/Drive-supplied MIME type.
+    // Range avoids pulling entire sensitive documents through a Vercel function.
+    const sample = await driveRequest(
+      token, `files/${encodeURIComponent(file.id)}?alt=media`,
+      { headers: { Range: "bytes=0-4" } },
+    );
+    if (!sample.ok || !sample.body) throw new Error("Cannot inspect Drive file bytes");
+    const reader = sample.body.getReader();
+    const marker: number[] = [];
+    try {
+      while (marker.length < 5) {
+        const next = await reader.read();
+        if (next.done) break;
+        marker.push(...Array.from(next.value.subarray(0, 5 - marker.length)));
+      }
+    } finally {
+      await reader.cancel();
+    }
+    if (new TextDecoder().decode(new Uint8Array(marker)) !== "%PDF-") {
+      throw new Error("Drive upload does not contain a PDF header");
+    }
     return {
       object: { connectionId: row.id, provider: this.provider, providerObjectId: file.id },
       contentType: file.mimeType, byteLength: file.size,
