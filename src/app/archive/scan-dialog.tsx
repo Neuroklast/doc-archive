@@ -5,6 +5,8 @@ import {
   MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_SOURCE_PAGES,
 } from "@/server/storage/limits";
 import type { PreparedPdf, ScanInput } from "@/lib/document/prepare";
+import { suggestFolder } from "@/lib/document/suggest-folder";
+import type { FolderTreeEntry } from "@/lib/document/folder-tree";
 
 type LocalPage = ScanInput & { id: string; preview: string };
 type PendingUpload = { uploadSessionId: string; sessionUri: string };
@@ -13,13 +15,16 @@ function friendlySize(bytes: number) {
   return `${(bytes / 1024 / 1024).toLocaleString("de-DE", { maximumFractionDigits: 2 })} MB`;
 }
 
-export default function ScanDialog({ onClose, onSaved }: {
+export default function ScanDialog({ onClose, onSaved, folders, initialFolderId }: {
   onClose: () => void;
   onSaved: () => void;
+  folders: FolderTreeEntry[];
+  initialFolderId: string | null;
 }) {
   const [pages, setPages] = useState<LocalPage[]>([]);
   const [title, setTitle] = useState("");
   const [sender, setSender] = useState("");
+  const [folderId, setFolderId] = useState(initialFolderId && folders.some(f => f.id === initialFolderId) ? initialFolderId : "");
   const [quality, setQuality] = useState<"readable" | "compact">("readable");
   const [skipOcr, setSkipOcr] = useState(false);
   const [prepared, setPrepared] = useState<PreparedPdf | null>(null);
@@ -38,7 +43,7 @@ export default function ScanDialog({ onClose, onSaved }: {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busy && !ticket) onClose();
+      if (event.key === "Escape" && !busy) onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -125,7 +130,10 @@ export default function ScanDialog({ onClose, onSaved }: {
         const checksum = await sha256(prepared.blob);
         const res = await fetch("/api/uploads", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: title.trim(), byteLength: prepared.blob.size, sha256: checksum }),
+          body: JSON.stringify({
+            title: title.trim(), sender: sender.trim(), ocrText: prepared.text,
+            folderId: folderId || null, byteLength: prepared.blob.size, sha256: checksum,
+          }),
         });
         const response: unknown = await res.json();
         const data = response && typeof response === "object" ? response as Record<string, unknown> : {};
@@ -142,10 +150,7 @@ export default function ScanDialog({ onClose, onSaved }: {
 
       setProgress("Datei in Drive bestätigen und archivieren");
       const finish = await fetch(`/api/uploads/${encodeURIComponent(active.uploadSessionId)}/complete`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(), sender: sender.trim(), ocrText: prepared.text,
-        }),
+        method: "POST",
       });
       const response: unknown = await finish.json();
       const data = response && typeof response === "object" ? response as Record<string, unknown> : {};
@@ -164,6 +169,9 @@ export default function ScanDialog({ onClose, onSaved }: {
   }
 
   const pdfOnly = pages.length === 1 && pages[0].file.type === "application/pdf";
+  const suggestion = prepared && !ticket
+    ? suggestFolder(title, sender, prepared.text, folders)
+    : null;
 
   return <div className="scan-backdrop" role="presentation">
     <section className="scan-modal" role="dialog" aria-modal="true" aria-labelledby="scan-title">
@@ -171,7 +179,7 @@ export default function ScanDialog({ onClose, onSaved }: {
         <div><p className="eyebrow">DOKUMENTENERFASSUNG</p><h2 id="scan-title">Dokument hinzufügen</h2>
           <p>Fotos lokal zu einem PDF zusammenführen, Text erkennen und in Drive ablegen.</p></div>
         <button type="button" className="scan-close" onClick={onClose}
-          aria-label="Schließen" disabled={busy || !!ticket}>✕</button>
+          aria-label="Schließen" disabled={busy}>✕</button>
       </header>
       <div className="scan-body">
         <div className="scan-column">
@@ -203,13 +211,24 @@ export default function ScanDialog({ onClose, onSaved }: {
         </div>
         <div className="scan-column scan-settings">
           <label>Dokumenttitel
-            <input type="text" maxLength={180} required value={title}
+            <input type="text" maxLength={180} required value={title} disabled={busy || !!ticket}
               onChange={e => setTitle(e.target.value)} placeholder="Beispiel: Versicherungsschreiben" />
           </label>
           <label>Absender (optional)
-            <input type="text" maxLength={180} value={sender}
+            <input type="text" maxLength={180} value={sender} disabled={busy || !!ticket}
               onChange={e => setSender(e.target.value)} placeholder="Beispiel: Krankenkasse" />
           </label>
+          <label>Zielordner in Google Drive
+            <select value={folderId} disabled={busy || !!ticket}
+              onChange={e => setFolderId(e.target.value)}>
+              <option value="">DOC ARCHIVE (Hauptordner)</option>
+              {folders.map(folder => <option key={folder.id} value={folder.id}>{folder.path}</option>)}
+            </select>
+          </label>
+          {suggestion && suggestion.id !== folderId && <div className="folder-suggestion">
+            <span>Ordner-Vorschlag: <strong>{suggestion.name}</strong></span>
+            <button type="button" onClick={() => setFolderId(suggestion.id)}>Übernehmen</button>
+          </div>}
           {!pdfOnly && <><label>PDF-Qualität
             <select value={quality} disabled={busy || !!ticket} onChange={e => {
               setQuality(e.target.value as "readable" | "compact");
@@ -246,9 +265,9 @@ export default function ScanDialog({ onClose, onSaved }: {
           {error && <p className="form-error" role="alert">{error}</p>}
           <button type="button" className="button button-primary" onClick={archive}
             disabled={!prepared || !title.trim() || busy}>
-            {busy ? "Archivierung läuft …" : ticket ? "Upload erneut abschließen" : "In Google Drive archivieren"}
+            {busy ? "Archivierung läuft …" : ticket ? "Upload fortsetzen / abschließen" : "In Google Drive archivieren"}
           </button>
-          <p className="scan-explain">Dateien verlassen deinen Browser erst beim ausdrücklichen Archivieren. Bereits erstellte Drive-Dateien werden bei Fehlern nicht automatisch gelöscht.</p>
+          <p className="scan-explain">Dateien verlassen deinen Browser erst beim ausdrücklichen Archivieren. Falls der Abschluss scheitert, kannst du das Fenster schließen und den bereits hochgeladenen Inhalt im Archiv wiederherstellen.</p>
         </div>
       </div>
     </section>
