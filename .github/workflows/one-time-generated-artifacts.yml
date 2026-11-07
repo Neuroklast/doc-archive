@@ -34,4 +34,4 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'build: lock dependencies and initial schema [skip ci]'
-          git -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" push origin HEAD:refs/heads/feat/document-upload-ocr-drive
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:refs/heads/feat/document-upload-ocr-drive
