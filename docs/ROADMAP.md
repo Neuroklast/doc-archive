@@ -2,7 +2,7 @@
 
 Derived from agent-documents templates/PRD.md, core/workflow.md, core/quality.md and testing/strategy.md.
 
-> **Status:** Plan only. Documentation commits do not constitute an application implementation or production deployment.
+> **Status:** Live roadmap for an implemented but not yet deployed application. GitHub CI passing is not proof of live Google OAuth/Neon/Drive integration.
 
 ## Phase 1 — Scaffold and private foundation
 - Initialize Next.js/React/TypeScript, Tailwind and shadcn/ui with pinned lockfile.
@@ -22,15 +22,15 @@ Derived from agent-documents templates/PRD.md, core/workflow.md, core/quality.md
 - Done when scanned multipage synthetic letter produces readable, searchable, compressed PDF and handles failure/retry safely.
 
 ## Phase 3 — Storage lifecycle and archive
-- Drive API v3 resumable upload (server starts, browser transfers), verify/complete, retries and orphan reconciliation.
-- Create real Drive folder mappings and reconcile external rename/move/trash/delete with `changes.list`.
-- Folder tree, version metadata, tags, date/sender suggestions and user corrections.
+- **Implemented:** Drive API v3 resumable upload, session-specific verification, idempotent completion, and 7-day confirmation recovery for already-transferred files. **Pending:** resume partial transfer across a browser restart, full orphan cleanup.
+- **Implemented:** user-created nested Google Drive folders with server-owned ID mappings and idempotent retry after partial folder creation. **Pending:** reconcile external rename/move/trash/delete using Drive `changes.list`.
+- **Implemented:** folder tree, folder-filtered search, version metadata and optional local folder suggestions. **Pending:** tags, date extraction and metadata editing.
 - Trash/restore and explicit final deletion.
 - Done when repeated/failed/aborted upload never yields a fake ready record or an unrecoverable original, and revoked OAuth is visibly recoverable via reconnect.
 
 ## Phase 4 — Search and document viewer
 - PostgreSQL full-text indexing with German stemming and user scope.
-- Filter by sender, title, text, dates, category, tags and folder.
+- **Implemented:** search by title, sender, OCR text and exact folder. **Pending:** date/category/tag filters and descendant-folder aggregation.
 - Paginated desktop list, preview pane, mobile reader and protected download.
 - Done when synthetic documents are found by body text and one user cannot see another user's hits, facets or snippets.
 

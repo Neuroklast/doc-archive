@@ -1,4 +1,4 @@
-# DOC ARCHIVE local development
+# DOC ARCHIVE local development (Google Drive folders and recovery)
 
 ## Requirements
 
@@ -24,7 +24,7 @@ Google callback for local development: `http://localhost:3000/api/google/callbac
 
 ```sh
 npm run db:generate
-# CI rejects schema drift. Inspect the committed drizzle/0000_*.sql before applying.
+# CI rejects schema drift. Review both drizzle/0000_*.sql and drizzle/0001_*.sql before applying.
 npm run db:migrate
 npm run dev
 ```
@@ -35,7 +35,9 @@ Use the committed ordered Drizzle migration chain. Run it on an empty developmen
 
 Open `/login`, create the allowed owner account using the setup key, then connect Google Drive from the dashboard. The connection creates a visible `DOC ARCHIVE` folder in the connected user's Drive.
 
-With a connected account, choose **Dokument hinzufügen**. Select up to 20 images (JPEG, PNG, WebP) or one PDF. Reorder/rotate images, choose quality, prepare, review and explicitly archive the PDF. Image scans use local German OCR. The resulting PDF and metadata become available for protected preview/download and full-text search. Original camera images are **not** backed up.
+With a connected account, choose **Dokument hinzufügen**. Select up to 20 images (JPEG, PNG, WebP) or one PDF. Reorder/rotate images, choose quality, prepare, review and explicitly archive the PDF. Image scans use local German OCR. The resulting PDF and metadata become available for protected preview/download and full-text search. Create a folder with **+ Ordner**, optionally nesting it inside another archive folder. On the scanner choose the destination folder or accept the optional rule-based suggestion. A folder is created in the user's visible Google Drive.
+
+If the file reached Drive but the browser closed before database completion, the **Ausstehende Uploads** area offers **Abschluss prüfen**. Pending title/sender/OCR metadata are stored in Neon before transfer to support finalization. A partially transferred file cannot be resumed after losing the browser's session URI. Original camera images are **not** backed up.
 
 ## Checks
 
@@ -50,4 +52,4 @@ A passing build does **not** prove Google Drive CORS, account consent, database 
 
 ## Current gaps
 
-See [implementation status](IMPLEMENTATION_STATUS.md) for known gaps including unimplemented PDF-import OCR, Drive folder mapping, backup/export and production credential setup.
+See [implementation status](IMPLEMENTATION_STATUS.md) for missing external Drive change reconciliation, orphan cleanup, backup/export, and PDF-import OCR. Use the [synthetic test plan](DRIVE_TEST_PLAN.md) before archiving real documents.

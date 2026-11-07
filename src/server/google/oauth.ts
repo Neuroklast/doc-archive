@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { storageConnections } from "@/server/db/schema";
-import { decryptSecret } from "@/server/crypto/secrets";
+import { decryptSecret, encryptSecret } from "@/server/crypto/secrets";
 
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 
@@ -143,14 +143,30 @@ export async function getDriveAccessToken(userId: string): Promise<string> {
   });
   if (!response.ok) {
     if (response.status === 400 || response.status === 401) {
-      await db.update(storageConnections).set({ status: "needs_reconnect" }).where(
+      // Another request may already have stored a rotated refresh token.
+      await db.update(storageConnections).set({ status: "needs_reconnect" }).where(and(
         eq(storageConnections.id, connection.id),
-      );
+        eq(storageConnections.refreshTokenEncrypted, connection.refreshTokenEncrypted),
+      ));
     }
     throw new Error("Google Drive token refresh failed");
   }
   const body: unknown = await response.json();
   if (!body || typeof body !== "object" || !("access_token" in body) ||
       typeof body.access_token !== "string") throw new Error("Google token refresh invalid");
+  if ("refresh_token" in body && typeof body.refresh_token === "string" &&
+      body.refresh_token.length > 0) {
+    const rotated = encryptSecret(
+      body.refresh_token, tokenContext(userId, connection.providerAccountId),
+    );
+    // Concurrency guard prevents stale requests from overwriting the latest token.
+    await db.update(storageConnections).set({
+      refreshTokenEncrypted: rotated,
+      updatedAt: new Date(),
+    }).where(and(
+      eq(storageConnections.id, connection.id),
+      eq(storageConnections.refreshTokenEncrypted, connection.refreshTokenEncrypted),
+    ));
+  }
   return body.access_token;
 }

@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/server/db";
-import { storageConnections, uploadSessions } from "@/server/db/schema";
+import { folders, storageConnections, uploadSessions } from "@/server/db/schema";
 import { driveRequest, getDriveAccessToken } from "@/server/google/oauth";
 import type {
   StorageConnectionRef, StorageFolderRef, StorageObjectRef,
@@ -54,27 +54,75 @@ export class GoogleDriveAdapter implements StorageProviderAdapter {
     return { row, token: await getDriveAccessToken(connection.ownerUserId) };
   }
 
-  async createFolder(args: Readonly<{ connection: StorageConnectionRef; name: string; parent?: StorageFolderRef }>): Promise<StorageFolderRef> {
+  async createFolder(args: Readonly<{
+    connection: StorageConnectionRef;
+    name: string;
+    parent?: StorageFolderRef;
+    clientFolderId?: string;
+  }>): Promise<StorageFolderRef> {
     const { row, token } = await this.authorized(args.connection);
     if (args.parent && args.parent.connectionId !== row.id) throw new Error("Foreign storage folder");
     const parent = args.parent?.providerFolderId ?? row.rootFolderId;
+
+    if (parent !== row.rootFolderId) {
+      const [owned] = await getDb().select({ id: folders.id }).from(folders).where(and(
+        eq(folders.userId, row.userId), eq(folders.driveFolderId, parent),
+      )).limit(1);
+      if (!owned) throw new Error("Folder parent is not part of this archive");
+    }
+    if (args.clientFolderId && !/^[0-9a-f-]{36}$/i.test(args.clientFolderId)) {
+      throw new Error("Invalid folder idempotency marker");
+    }
+
+    if (args.clientFolderId) {
+      const query = `appProperties has { key='docArchiveFolderId' and value='${args.clientFolderId}' } and trashed = false`;
+      const params = new URLSearchParams({
+        q: query, pageSize: "2",
+        fields: "files(id,parents,mimeType,appProperties)",
+      });
+      const found = await driveRequest(token, `files?${params}`);
+      if (!found.ok) throw new Error("Cannot reconcile existing Drive folder");
+      const result: unknown = await found.json();
+      if (!result || typeof result !== "object" || !("files" in result) ||
+          !Array.isArray(result.files)) throw new Error("Unexpected folder search response");
+      if (result.files.length > 1) throw new Error("Duplicate Drive folder marker");
+      if (result.files.length === 1) {
+        const folder = result.files[0] as Record<string, unknown>;
+        if (typeof folder.id !== "string" ||
+            folder.mimeType !== "application/vnd.google-apps.folder" ||
+            !Array.isArray(folder.parents) || !folder.parents.includes(parent)) {
+          throw new Error("Existing Drive folder has moved");
+        }
+        return { connectionId: row.id, providerFolderId: folder.id };
+      }
+    }
+
     const res = await driveRequest(token, "files?fields=id", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: args.name.slice(0, 120), mimeType: "application/vnd.google-apps.folder", parents: [parent] }),
+      body: JSON.stringify({
+        name: args.name.slice(0, 90),
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [parent],
+        ...(args.clientFolderId ? { appProperties: { docArchiveFolderId: args.clientFolderId } } : {}),
+      }),
     });
     if (!res.ok) throw new Error("Drive folder creation failed");
     const metadata: unknown = await res.json();
-    if (!metadata || typeof metadata !== "object" || !("id" in metadata) || typeof metadata.id !== "string") {
-      throw new Error("Drive folder not confirmed");
-    }
+    if (!metadata || typeof metadata !== "object" || !("id" in metadata) ||
+        typeof metadata.id !== "string") throw new Error("Drive folder not confirmed");
     return { connectionId: row.id, providerFolderId: metadata.id };
   }
 
   async beginUpload(input: UploadStartInput): Promise<UploadGrant> {
     const { row, token } = await this.authorized(input.connection);
-    // The MVP uploads into the app-created root only; folder mapping follows later.
-    if (input.targetFolder.connectionId !== row.id ||
-        input.targetFolder.providerFolderId !== row.rootFolderId) throw new Error("Invalid upload folder");
+    if (input.targetFolder.connectionId !== row.id) throw new Error("Invalid upload connection");
+    const parent = input.targetFolder.providerFolderId;
+    if (parent !== row.rootFolderId) {
+      const [owned] = await getDb().select({ id: folders.id }).from(folders).where(and(
+        eq(folders.userId, row.userId), eq(folders.driveFolderId, parent),
+      )).limit(1);
+      if (!owned) throw new Error("Upload folder not owned by this archive");
+    }
     if (!/^[0-9a-f-]{36}$/i.test(input.uploadSessionId)) throw new Error("Invalid upload ticket");
     const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id", {
       method: "POST", cache: "no-store", signal: AbortSignal.timeout(15_000),
@@ -87,7 +135,7 @@ export class GoogleDriveAdapter implements StorageProviderAdapter {
       body: JSON.stringify({
         name: input.proposedFileName,
         mimeType: input.contentType,
-        parents: [row.rootFolderId],
+        parents: [parent],
         appProperties: { docArchiveUpload: input.uploadSessionId },
       }),
     });
@@ -133,8 +181,16 @@ export class GoogleDriveAdapter implements StorageProviderAdapter {
     }
     if (raw.files.length !== 1) throw new Error("Upload is missing or ambiguous");
     const file = readDriveFile(raw.files[0]);
+    let expectedParent = row.rootFolderId;
+    if (ticket.folderId) {
+      const [folder] = await getDb().select().from(folders).where(and(
+        eq(folders.id, ticket.folderId), eq(folders.userId, row.userId),
+      )).limit(1);
+      if (!folder?.driveFolderId) throw new Error("Upload folder is missing");
+      expectedParent = folder.driveFolderId;
+    }
     if (file.uploadId !== ticket.id || file.trashed ||
-        !file.parents.includes(row.rootFolderId) ||
+        !file.parents.includes(expectedParent) ||
         file.mimeType !== "application/pdf" || file.size !== ticket.expectedBytes) {
       throw new Error("Drive upload metadata mismatch");
     }

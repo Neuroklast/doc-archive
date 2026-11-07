@@ -11,8 +11,10 @@ import {
 
 export const runtime = "nodejs";
 
-function back(request: Request, result: string) {
-  return NextResponse.redirect(new URL(`/archive?drive=${result}`, request.url), {
+function back(result: string) {
+  const origin = process.env.BETTER_AUTH_URL;
+  if (!origin) throw new Error("BETTER_AUTH_URL is not configured");
+  return NextResponse.redirect(new URL(`/archive?drive=${result}`, origin), {
     headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
   });
 }
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const session = await getSession();
   if (!session || !state || !code || state.length > 250 || code.length > 4096) {
-    return back(request, "failed");
+    return back( "failed");
   }
   const db = getDb();
   // Consume the nonce only once and bind it to the original Better Auth session.
@@ -35,12 +37,12 @@ export async function GET(request: Request) {
     gt(oauthStates.expiresAt, new Date()),
   )).returning();
 
-  if (!attempt) return back(request, "failed");
+  if (!attempt) return back( "failed");
 
   try {
     const verifier = decryptSecret(attempt.verifierEncrypted, `oauth-state:${session.user.id}`);
     const tokens = await exchangeGoogleCode(code, verifier);
-    if (!tokens.scope?.split(/\s+/).includes(DRIVE_SCOPE)) return back(request, "failed");
+    if (!tokens.scope?.split(/\s+/).includes(DRIVE_SCOPE)) return back( "failed");
     const driveAccount = await getDriveAccount(tokens.access_token);
 
     const [existing] = await db.select().from(storageConnections).where(and(
@@ -51,13 +53,13 @@ export async function GET(request: Request) {
     // Never replace a linked account with another Google account. Existing document IDs
     // and folder mappings would then point to the wrong owner's Drive.
     if (existing && existing.providerAccountId !== driveAccount.id) {
-      return back(request, "different_account");
+      return back( "different_account");
     }
 
     // Reject missing offline permission unless we already hold a token for this exact account.
     const canReuse = existing?.providerAccountId === driveAccount.id &&
       existing.refreshTokenEncrypted.length > 0;
-    if (!tokens.refresh_token && !canReuse) return back(request, "failed");
+    if (!tokens.refresh_token && !canReuse) return back( "failed");
 
     const encrypted = tokens.refresh_token
       ? encryptSecret(tokens.refresh_token, tokenContext(session.user.id, driveAccount.id))
@@ -85,8 +87,8 @@ export async function GET(request: Request) {
         updatedAt: new Date(),
       },
     });
-    return back(request, "connected");
+    return back( "connected");
   } catch {
-    return back(request, "failed");
+    return back( "failed");
   }
 }

@@ -82,6 +82,8 @@ export interface StorageProviderAdapter {
     connection: StorageConnectionRef;
     name: string;
     parent?: StorageFolderRef;
+    /** Internal UUID persisted before provider creation, for recovery. */
+    clientFolderId?: string;
   }>): Promise<StorageFolderRef>;
 
   beginUpload(input: UploadStartInput): Promise<UploadGrant>;

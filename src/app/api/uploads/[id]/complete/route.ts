@@ -5,8 +5,7 @@ import {
   documents, documentOcr, documentVersions, storageConnections, uploadSessions,
 } from "@/server/db/schema";
 import { googleDriveAdapter } from "@/server/google/drive-adapter";
-import { objectBody, privateJson, sameOrigin, smallJson } from "@/server/http/security";
-import { archiveTitle, MAX_OCR_CHARS } from "@/server/storage/limits";
+import { privateJson, sameOrigin } from "@/server/http/security";
 
 export const runtime = "nodejs";
 type Params = { params: Promise<{ id: string }> };
@@ -19,17 +18,6 @@ export async function POST(request: Request, { params }: Params) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return privateJson({ error: "Ungültiger Upload" }, 400);
 
-  let input: Record<string, unknown> | null;
-  try { input = objectBody(await smallJson(request, MAX_OCR_CHARS + 4096)); }
-  catch { return privateJson({ error: "Ungültige Archivdaten" }, 400); }
-  const title = archiveTitle(input?.title);
-  const ocrText = input?.ocrText;
-  const sender = input?.sender;
-  if (!title || typeof ocrText !== "string" || ocrText.length > MAX_OCR_CHARS ||
-      (sender != null && (typeof sender !== "string" || sender.length > 180))) {
-    return privateJson({ error: "Ungültige Metadaten" }, 400);
-  }
-
   const db = getDb();
   const [ticket] = await db.select().from(uploadSessions).where(and(
     eq(uploadSessions.id, id),
@@ -37,8 +25,11 @@ export async function POST(request: Request, { params }: Params) {
   )).limit(1);
   if (!ticket) return privateJson({ error: "Upload nicht gefunden" }, 404);
   if (ticket.status === "ready" && ticket.documentId) return privateJson({ documentId: ticket.documentId, ready: true });
-  if (ticket.status !== "uploading" || ticket.expiresAt.getTime() <= Date.now()) {
-    return privateJson({ error: "Upload nicht mehr abschließbar" }, 409);
+  // The browser grant expires sooner than Google Drive's upload session.
+  // Recovery stays possible for up to 7 days when Drive has the complete file.
+  const recoveryUntil = ticket.createdAt.getTime() + 7 * 24 * 60 * 60_000;
+  if (ticket.status !== "uploading" || Date.now() > recoveryUntil) {
+    return privateJson({ error: "Upload ist nicht mehr wiederherstellbar" }, 409);
   }
 
   const [connection] = await db.select().from(storageConnections).where(and(
@@ -68,14 +59,15 @@ export async function POST(request: Request, { params }: Params) {
         eq(uploadSessions.id, ticket.id),
         eq(uploadSessions.userId, session.user.id),
         eq(uploadSessions.status, "uploading"),
-        gt(uploadSessions.expiresAt, new Date()),
+        gt(uploadSessions.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60_000)),
       )).returning({ id: uploadSessions.id });
       if (!claimed) throw new Error("Ticket already finalized");
 
       const [document] = await tx.insert(documents).values({
         userId: session.user.id,
-        title,
-        sender: typeof sender === "string" && sender.trim() ? sender.trim() : null,
+        title: ticket.title,
+        sender: ticket.sender,
+        folderId: ticket.folderId,
         status: "ready",
       }).returning({ id: documents.id });
       await tx.insert(documentVersions).values({
@@ -88,11 +80,11 @@ export async function POST(request: Request, { params }: Params) {
         sha256: ticket.expectedSha256,
         integrity: confirmed.integrity,
       });
-      if (ocrText.trim()) {
+      if (ticket.ocrText?.trim()) {
         await tx.insert(documentOcr).values({
           documentId: document.id,
           userId: session.user.id,
-          text: ocrText,
+          text: ticket.ocrText!,
           language: "deu",
         });
       }
