@@ -7,21 +7,6 @@ export { depthOf, folderName, MAX_FOLDER_COUNT, validFolderId } from "@/lib/docu
 
 export type FolderRow = typeof folders.$inferSelect;
 
-export function depthOf(parentId: string | null, rows: readonly Pick<FolderRow, "id" | "parentId">[]): number {
-  const byId = new Map(rows.map(row => [row.id, row.parentId]));
-  let id = parentId;
-  let depth = 1;
-  const visited = new Set<string>();
-  while (id) {
-    if (visited.has(id) || !byId.has(id)) throw new Error("Invalid folder parent tree");
-    visited.add(id);
-    depth++;
-    id = byId.get(id) ?? null;
-    if (depth > MAX_FOLDER_DEPTH) throw new Error("Maximum folder depth exceeded");
-  }
-  return depth;
-}
-
 export async function materializeFolder(
   ownerId: string,
   targetId: string,
