@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean, index, integer, pgTable, text, timestamp,
   uniqueIndex, uuid, varchar,
@@ -113,7 +114,7 @@ export const documentOcr = pgTable("document_ocr", {
   text: text("text").notNull(),
   language: varchar("language", { length: 16 }).notNull().default("deu"),
   confidence: integer("confidence"),
-});
+}, (t) => [index("document_ocr_german_fts_idx").using("gin", sql`to_tsvector('german', ${t.text})`)]);
 
 export const uploadSessions = pgTable("upload_sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -123,6 +124,7 @@ export const uploadSessions = pgTable("upload_sessions", {
   expectedBytes: integer("expected_bytes").notNull(),
   expectedSha256: text("expected_sha256"),
   providerObjectId: text("provider_object_id"),
+  documentId: uuid("document_id").references(() => documents.id),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("uploads_owner_status_idx").on(t.userId, t.status)]);

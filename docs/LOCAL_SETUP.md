@@ -1,52 +1,41 @@
-# Local development: Phase 1
-
-This is the first app scaffold. No deployment or provider resources are created automatically.
+# DOC ARCHIVE local development
 
 ## Requirements
-Node.js 22+, npm, a new Neon Postgres database, a Google Cloud project with Google Drive API enabled and an OAuth 2.0 Web Application client.
 
-## Configure
+Node.js 22+, npm, a newly provisioned Neon PostgreSQL database, and a Google Cloud OAuth web application with Drive API enabled.
 
 ```sh
-npm install
+npm ci
 cp .env.example .env.local
 ```
 
-Fill:
-- `DATABASE_URL`: secret Neon PostgreSQL URL.
-- `BETTER_AUTH_SECRET`: at least 32 random characters.
-- `BETTER_AUTH_URL`: exact site origin (local: `http://localhost:3000`).
-- `ARCHIVE_OWNER_EMAIL`: email allowed for the single private owner account.
-- `ARCHIVE_SETUP_SECRET`: random secret of 32+ characters, needed only at initial account creation. Keep it private.
-- `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`: Google web client.
-- `GOOGLE_OAUTH_REDIRECT_URI`: exact callback, local: `http://localhost:3000/api/google/callback`.
-- `STORAGE_TOKEN_ENCRYPTION_KEY`: 32 random bytes as base64, **not the same** as Better Auth secret.
+Fill `.env.local` with `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ARCHIVE_OWNER_EMAIL`, `ARCHIVE_SETUP_SECRET`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI` and `STORAGE_TOKEN_ENCRYPTION_KEY`.
 
-Example commands to generate secrets locally:
+Generate strong independent secrets locally:
 
 ```sh
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 ```
 
-Do not commit `.env.local` or paste secrets into issues/logs/screenshots.
+Google callback for local development: `http://localhost:3000/api/google/callback`. Add that exact redirect to the Google OAuth web client. Request only `drive.file`. Do not paste tokens in GitHub issues or public environment variables.
 
-## Initialize database
+## Database
 
 ```sh
 npm run db:generate
-# Review generated files under drizzle/ before proceeding.
+# CI rejects schema drift. Inspect the committed drizzle/0000_*.sql before applying.
 npm run db:migrate
 npm run dev
 ```
 
-Drizzle schema is canonical. For throwaway local DB experiments only, `npm run db:push` can sync schema without a committed migration. Never run it on production without reviewing changes.
+Use the committed ordered Drizzle migration chain. Run it on an empty development database first; never push or reset an existing production schema blindly.
 
-## Register app and connect Drive
+## First run
 
-Open `/login`. Choose setup, enter approved owner email, a new strong password and the secret setup token. After signing in, use **Google Drive verbinden**. Only Drive `drive.file` is requested. The consent flow creates an ordinary `DOC ARCHIVE` folder in your own Drive. Other Drive files are not scanned automatically.
+Open `/login`, create the allowed owner account using the setup key, then connect Google Drive from the dashboard. The connection creates a visible `DOC ARCHIVE` folder in the connected user's Drive.
 
-Disconnecting a Google account revokes the app grant where possible but deliberately leaves files in Drive. Existing indexed metadata is kept for future phases.
+With a connected account, choose **Dokument hinzufügen**. Select up to 20 images (JPEG, PNG, WebP) or one PDF. Reorder/rotate images, choose quality, prepare, review and explicitly archive the PDF. Image scans use local German OCR. The resulting PDF and metadata become available for protected preview/download and full-text search. Original camera images are **not** backed up.
 
 ## Checks
 
@@ -57,4 +46,8 @@ npm test
 npm run build
 ```
 
-The app routes require DB variables. Build can use a placeholder URL for static compilation; real login and OAuth require working DB/Google credentials. No real document upload exists yet.
+A passing build does **not** prove Google Drive CORS, account consent, database migrations or cross-device recovery. Test with non-sensitive synthetic letters and an isolated Google account before adding irreplaceable documents.
+
+## Current gaps
+
+See [implementation status](IMPLEMENTATION_STATUS.md) for known gaps including unimplemented PDF-import OCR, Drive folder mapping, backup/export and production credential setup.

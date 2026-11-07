@@ -11,7 +11,12 @@ test("encrypted tokens roundtrip only with matching account context", () => {
   assert.notEqual(encrypted, secret);
   assert.equal(decryptSecret(encrypted, "google-drive:user-1:account-1"), secret);
   assert.throws(() => decryptSecret(encrypted, "google-drive:user-2:account-1"));
-  assert.throws(() => decryptSecret(encrypted.slice(0, -1) + "X", "google-drive:user-1:account-1"));
+  const parts = encrypted.split(".");
+  // Mutate ciphertext bytes (not merely base64url padding bits).
+  const ciphertext = Buffer.from(parts[3], "base64url");
+  ciphertext[0] ^= 0x80;
+  parts[3] = ciphertext.toString("base64url");
+  assert.throws(() => decryptSecret(parts.join("."), "google-drive:user-1:account-1"));
 });
 
 test("OAuth state is stored by SHA-256 hash, not original nonce", () => {

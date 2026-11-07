@@ -1,14 +1,13 @@
-# Storage interface
+# Storage adapters
 
-[contracts.ts](contracts.ts) is the dependency-free TypeScript interface, **not** a working implementation.
+The SDK-independent TypeScript contract in [contracts.ts](contracts.ts) remains the boundary between application services and storage providers.
 
-- MVP: Google Drive adapter with per-user OAuth grant, drive.file scope and real Drive folders.
-- Future optional adapter: Cloudflare R2; never store files there without user approval.
-- Google resumable transfer and R2 signed PUT have different upload grants by design.
-- Only server services call adapters after Better Auth session, user ownership and connection checks.
-- OAuth access/refresh tokens never appear in client data. Drive downloads are streamed by the backend.
-- Provider metadata and content hash are separate verification levels. A hash received from a browser is untrusted.
-- StorageChangeFeed is an optional provider capability, not a promise of complete Google Drive account sync.
-- No providers, migrations, package scripts or deployment are implemented yet.
+- The [GoogleDriveAdapter](../google/drive-adapter.ts) now implements beginUpload, verifyUpload, authorized reading, folder operations, move/rename and delete.
+- The MVP's upload routes only use the app-created **root Drive folder**; nested Drive folder mappings and synchronization are not wired into the archive UI yet.
+- A Google resumable session URI is a short-lived write capability provided to the browser. OAuth access and refresh tokens stay server-side.
+- The completion endpoint verifies an upload's server-generated Drive appProperty and actual PDF header before committing document metadata. Hash integrity is marked `provider_metadata`, not `content_sha256`.
+- All provider adapter calls run after Better Auth session/owner checks. Raw Drive IDs must never authorize a request by themselves.
+- Cloudflare R2 is not activated and remains an optional future adapter.
+- There is no live-provider integration test or production deployment yet.
 
-See [storage architecture](../../../docs/STORAGE_PROVIDER.md) and [Google OAuth](../../../docs/GOOGLE_OAUTH.md).
+See [storage design](../../../docs/STORAGE_PROVIDER.md) and [OAuth security](../../../docs/GOOGLE_OAUTH.md).

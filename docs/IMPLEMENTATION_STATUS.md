@@ -1,38 +1,40 @@
 # Implementation status
 
-## Phase 1 — first executable scaffold
+## Delivered in the codebase
 
-The following files are now present in the feature branch, not yet deployed:
+### Foundation
+- Next.js 16 App Router, responsive German login/dashboard, Better Auth and private one-owner registration gate.
+- Neon PostgreSQL/Drizzle schema for identity, OAuth state, connections, uploads, documents, versions, folders and OCR.
+- Google OAuth code flow with PKCE, one-time state, server-side token refresh, encrypted refresh tokens and connection/reconnection screen.
 
-- Next.js 16 App Router with a responsive German dashboard, sign-in/setup UI and private route guard.
-- Better Auth with email/password, one preapproved `ARCHIVE_OWNER_EMAIL` and a separate long `ARCHIVE_SETUP_SECRET` required for initial registration.
-- Neon PostgreSQL Drizzle schema for auth, storage connections, OAuth state, logical folders, documents, versions, OCR text and upload sessions.
-- Google OAuth authorization-code flow, state bound to the Better Auth session, PKCE, encrypted refresh tokens (AES-256-GCM), account validation and creation of the visible root `DOC ARCHIVE` folder.
-- Connection status, retry/reconnect and token revocation without deleting user files.
-- Offline-capable in principle TypeScript provider interface retained from planning; the Google adapter is still **not** complete.
-- CI workflow and initial security-focused tests.
+### Photo/PDF capture and Drive archive
+- Select JPEG/PNG/WebP images, reorder or rotate them, choose quality and prepare a multipage PDF on-device.
+- German OCR via Tesseract.js in the browser and hOCR word coordinates for a transparent, selectable PDF text layer when recognized.
+- Existing PDFs can be uploaded unchanged. OCR extraction from existing PDFs is **not** yet implemented.
+- Review/download the generated PDF before choosing to upload.
+- Start a Google Drive resumable upload using the connected account. Transfer file bytes directly from the browser using the scoped session URI, never the Google access token.
+- After upload, the server searches for the opaque per-ticket Drive appProperty, checks the authorized connection, parent folder, type, size and actual PDF header before a database transaction marks the document ready.
+- A repeated completion request is idempotent; failed transfers can retry in the same browser session.
+- Protected PDF preview/download through the server and paginated search over title, sender and German OCR text.
 
-## Deliberately not implemented yet
+## Important limitations
 
-- Browser scan/crop/OpenCV processing, OCR, PDF generation and uploads.
-- Google resumable upload adapter, completion verification, download streaming, folder synchronization and full-text indexed search API.
-- Background reconciliation, recovery/export, provider failover or Cloudflare R2.
-- Production Vercel deployment and live provider configuration.
+- **No live end-to-end verification with a real Google Drive account or Neon DB** has been performed. GitHub CI exercises lint, types, unit tests and Next build, not provider network flows.
+- Browser direct uploads to Google Drive require deployed-origin CORS testing. Some failed uploads may leave orphan Drive files; background reconciliation and multi-day recovery are still missing.
+- Original photos remain on the user's device; the app currently saves the derived PDF only. There is no independent original image backup.
+- Crop, perspective correction, deskew, classification, date extraction, real Drive subfolder mapping, imports of pre-existing Drive files, Drive change-feed sync, trash/restore and export/backup are not yet implemented.
+- OCR may download language/runtime assets from third-party hosts on first use. Image bytes are processed in-browser and are only transferred on deliberate archive action. Self-hosting those assets is still outstanding for a fully first-party network path.
+- Metadata-only integrity plus actual PDF signature is **not** cryptographic equality to the client SHA-256; the expected hash is a client claim.
+- Imported PDFs do not receive an extra text layer or OCR-indexed body. Scanned image PDFs have a text layer only for recognized words supported by the embedded PDF font.
+- No Vercel production deployment or Google/Neon credentials have been configured.
+- The initial Drizzle SQL migration, schema snapshot and package-lock.json are committed. CI now uses npm ci and rejects uncommitted generated migration changes.
 
-Never treat a functional auth route or a database table as evidence that the complete document archive is usable.
+## Next work
+1. Apply the committed, reviewed Drizzle migration to a new isolated Neon database and verify schema/rollback procedures.
+2. Test Google OAuth, CORS, transfer, download and search using synthetic documents on a real preview deployment.
+3. Persist recovery of interrupted sessions, reconcile orphan files and drive-side changes.
+4. Implement folder synchronization, categorization, PDF text extraction, advanced scanning/cropping and secure backup/export.
+5. Extend security and accessibility testing before archiving irreplaceable correspondence.
 
-## Setup and verification
-
-1. Provision a Neon database and Vercel/Google OAuth web application credentials.
-2. Copy `.env.example` to a private `.env.local` file. Replace every placeholder; generate 32 random bytes for `STORAGE_TOKEN_ENCRYPTION_KEY` and an independent random 32+-character `ARCHIVE_SETUP_SECRET`.
-3. Run `npm install`, then `npm run db:generate` and `npm run db:migrate` against a new empty development database. Review generated SQL before applying.
-4. `npm run dev` to access `/login` and create the owner account using the setup secret.
-5. Register exact OAuth callback `http://localhost:3000/api/google/callback` with Google Cloud, enable Drive API, and test connection with a dedicated Google test account.
-6. Before any real documents, verify sign-in protection, signup key denial, OAuth state replay rejection, and callback account binding.
-
-## Safety caveats
-
-- No dependency lockfile has been generated in this execution environment because the npm registry is not reachable locally. All direct dependencies are pinned; GitHub CI uses `npm install` until a committed lockfile is generated and validated. Follow up before production deployment.
-- The Next.js build and tests must pass in CI before merging. No live Neon DB, Google OAuth credentials or deployed Vercel project have been configured in this change.
-- The initial auth schema is written in Drizzle, but migrations must be generated and reviewed before any DB deployment.
-- The current UI intentionally disables upload. Google Drive connection does not imply document-processing capability.
+## Verification
+Run `npm install`, `npm run db:generate`, `npm run lint`, `npm run typecheck`, `npm test` and `npm run build`. GitHub workflow performs these on PRs and main. An actual connected-provider and DB test is separate and mandatory before production usage.
