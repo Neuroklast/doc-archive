@@ -1,8 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 :root { color-scheme: dark; --bg:#0a0d11; --surface:#12161c; --surface2:#181d25; --line:#262c36; --text:#e8ebf0; --muted:#8995a5; --accent:#d2ff70; }
 * { box-sizing:border-box; }
 html,body { padding:0; margin:0; min-height:100%; }
-body { background:var(--bg); color:var(--text); font-family:"DM Sans",Arial,sans-serif; font-size:14px; }
+body { background:var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,Arial,sans-serif; font-size:14px; }
 button,input { font:inherit; }
 button { cursor:pointer; }
 button:disabled { opacity:.46; cursor:not-allowed; }
@@ -11,7 +10,7 @@ a { color:inherit; text-decoration:none; }
 .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
 .eyebrow { color:var(--accent); letter-spacing:.17em; font-size:10px; font-weight:700; }
 .muted { color:var(--muted); line-height:1.65; }
-.brandmark { display:inline-grid;place-items:center;width:62px;height:62px;border:1px solid #3e4a3a;border-radius:15px;background:#1b2421;color:#e9f4df;font:700 36px "Space Grotesk",sans-serif;letter-spacing:-.1em; }
+.brandmark { display:inline-grid;place-items:center;width:62px;height:62px;border:1px solid #3e4a3a;border-radius:15px;background:#1b2421;color:#e9f4df;font:700 36px ui-sans-serif,sans-serif;letter-spacing:-.1em; }
 .brandmark span { color:var(--accent); }
 .brandmark.small { width:39px;height:39px;font-size:25px;border-radius:10px; }
 .button { display:inline-flex;justify-content:center;align-items:center;min-height:44px;padding:0 19px;border-radius:9px;font-weight:700;border:1px solid transparent; }
@@ -39,7 +38,7 @@ a { color:inherit; text-decoration:none; }
 .app-shell { display:grid;grid-template-columns:250px minmax(0,1fr);height:100dvh;overflow:hidden; }
 .sidebar { border-right:1px solid var(--line);background:#101419;display:flex;flex-direction:column;padding:27px 16px;min-height:0; }
 .app-brand { display:flex;gap:12px;align-items:center;font:700 16px "Space Grotesk";padding:0 11px 40px; }
-.app-brand small { display:block;color:var(--muted);font:600 9px "DM Sans";letter-spacing:.14em;margin-top:4px; }
+.app-brand small { display:block;color:var(--muted);font:600 9px ui-sans-serif;letter-spacing:.14em;margin-top:4px; }
 .side-heading { color:#77828f;letter-spacing:.17em;font-weight:700;font-size:10px;margin:11px 12px 14px; }
 .sidebar nav { display:grid;gap:4px;margin-bottom:28px; }
 .nav-link { display:flex;gap:14px;align-items:center;padding:13px;border-radius:9px;color:#acb5c1; }

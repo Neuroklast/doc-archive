@@ -10,6 +10,7 @@ export default function AuthForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [setupToken, setSetupToken] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +20,9 @@ export default function AuthForm() {
     setPending(true);
     try {
       const result = create
-        ? await authClient.signUp.email({ name, email, password })
+        ? await authClient.signUp.email({ name, email, password }, {
+            headers: { "x-archive-setup-token": setupToken },
+          })
         : await authClient.signIn.email({ email, password });
       if (result.error) {
         setError("Anmeldung fehlgeschlagen. Bitte Eingaben oder Zugangsberechtigung prüfen.");
@@ -52,13 +55,18 @@ export default function AuthForm() {
           minLength={12} required value={password}
           onChange={e => setPassword(e.target.value)} />
       </label>
-      {error && <p className="form-error" role="alert">{error}</p>}
+      {create && <label>Einrichtungsschlüssel
+        <input type="password" autoComplete="off" minLength={32} required
+          value={setupToken} onChange={e => setSetupToken(e.target.value)} />
+      </label>}
+      {error && <p className="form-error" role="alert">{error}</p>
       <button className="button button-primary" type="submit" disabled={pending}>
         {pending ? "Wird geprüft …" : create ? "Konto erstellen" : "Anmelden"}
       </button>
     </form>
     <button className="text-button" type="button" onClick={() => {
       setCreate(!create);
+      setSetupToken("");
       setError(null);
     }}>{create ? "Bereits registriert? Anmelden" : "Erstes Konto einrichten"}</button>
   </section>;

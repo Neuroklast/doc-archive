@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { getDb } from "@/server/db";
@@ -15,10 +16,14 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (candidate) => {
+        before: async (candidate, ctx) => {
           const owner = process.env.ARCHIVE_OWNER_EMAIL?.trim().toLowerCase();
-          // Fail closed: private personal archive, not open self-registration.
-          if (!owner || candidate.email.toLowerCase() !== owner) return false;
+          const expected = process.env.ARCHIVE_SETUP_SECRET ?? "";
+          const supplied = ctx.request?.headers.get("x-archive-setup-token") ?? "";
+          // Owning the email address alone is not sufficient to seize initial registration.
+          if (!owner || candidate.email.toLowerCase() !== owner ||
+              expected.length < 32 || supplied.length !== expected.length ||
+              !timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))) return false;
           return { data: candidate };
         },
       },

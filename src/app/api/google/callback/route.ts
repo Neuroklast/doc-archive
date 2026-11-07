@@ -49,14 +49,15 @@ export async function GET(request: Request) {
     )).limit(1);
 
     // Reject missing offline permission unless we already hold a token for this exact account.
-    const canReuse = existing?.providerAccountId === driveAccount.id;
+    const canReuse = existing?.providerAccountId === driveAccount.id &&
+      existing.refreshTokenEncrypted.length > 0;
     if (!tokens.refresh_token && !canReuse) return back(request, "failed");
 
     const encrypted = tokens.refresh_token
       ? encryptSecret(tokens.refresh_token, tokenContext(session.user.id, driveAccount.id))
       : existing!.refreshTokenEncrypted;
-    const rootFolderId = canReuse
-      ? existing!.rootFolderId
+    const rootFolderId = existing?.providerAccountId === driveAccount.id
+      ? existing.rootFolderId
       : await createDriveRoot(tokens.access_token);
 
     await db.insert(storageConnections).values({

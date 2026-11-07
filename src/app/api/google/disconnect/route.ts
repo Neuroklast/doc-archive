@@ -34,9 +34,13 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
     if (!response.ok && response.status !== 400) throw new Error("Revoke failed");
-    // Delete connection after successful or already-invalid revoke.
-    // Future stored documents would require a separate disconnected state instead.
-    await db.delete(storageConnections).where(eq(storageConnections.id, connection.id));
+    // Keep the connection row and stable ID for document-version foreign keys.
+    // Remove its token instead of deleting the user's underlying Drive files.
+    await db.update(storageConnections).set({
+      status: "disconnected",
+      refreshTokenEncrypted: "",
+      updatedAt: new Date(),
+    }).where(eq(storageConnections.id, connection.id));
     return NextResponse.json({ disconnected: true }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Trennen fehlgeschlagen. Bitte erneut versuchen." }, { status: 502 });
