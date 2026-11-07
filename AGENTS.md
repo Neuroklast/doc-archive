@@ -21,7 +21,9 @@ This file is the entry point for coding agents. Read the task-specific guides be
 | Architecture / major feature | [core/architecture.md](core/architecture.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DECISIONS.md](docs/DECISIONS.md) |
 | Product scope / acceptance | [docs/PRODUCT_REQUIREMENTS.md](docs/PRODUCT_REQUIREMENTS.md) |
 | Scanning, OCR, PDF, compression | [docs/DOCUMENT_PIPELINE.md](docs/DOCUMENT_PIPELINE.md) |
-| Storage, file lifecycle | [stack/cloudflare-r2.md](stack/cloudflare-r2.md), [docs/SECURITY_AND_PRIVACY.md](docs/SECURITY_AND_PRIVACY.md) |
+| Storage and file lifecycle | [docs/STORAGE_PROVIDER.md](docs/STORAGE_PROVIDER.md), [stack/google-drive.md](stack/google-drive.md), [docs/SECURITY_AND_PRIVACY.md](docs/SECURITY_AND_PRIVACY.md) |
+| Google OAuth / refresh tokens | [docs/GOOGLE_OAUTH.md](docs/GOOGLE_OAUTH.md), [backend/auth.md](backend/auth.md) |
+| Optional future R2 backend | [stack/cloudflare-r2.md](stack/cloudflare-r2.md) |
 | Schema, folders, searching | [backend/data-and-schema.md](backend/data-and-schema.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Sessions, auth, permissions | [backend/auth.md](backend/auth.md), [docs/SECURITY_AND_PRIVACY.md](docs/SECURITY_AND_PRIVACY.md) |
 | Next.js / TypeScript | [stack/nextjs.md](stack/nextjs.md), [stack/typescript.md](stack/typescript.md) |
@@ -32,8 +34,9 @@ This file is the entry point for coding agents. Read the task-specific guides be
 | Hosting / infrastructure | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 
 ## Decision boundaries
-- The working architecture is Next.js on Vercel + Neon PostgreSQL + private Cloudflare R2 + Better Auth + browser OCR/PDF processing.
+- The working architecture is Next.js on Vercel + Neon PostgreSQL + user-connected Google Drive (`drive.file`) + Better Auth + local browser OCR/PDF processing. R2 is an optional future adapter, not a default or backup.
 - **Privacy choice remains open.** Server-side searchable OCR data is incompatible with a claim of end-to-end encryption. See [docs/DECISIONS.md](docs/DECISIONS.md).
+- Treat Google OAuth grants, refresh tokens, resumable session URIs and Drive file IDs as sensitive. Server-side app authentication and Google Drive authorization are independent; always check both as needed.
 - Do not introduce paid OCR/AI, analytics, trackers, public file URLs or background jobs without documented need and cost impact.
 - Never silently delete or replace source files, never archive a broken/partial PDF as successful, and never claim legal evidentiary equivalence between an optimized scan and the original.
 

@@ -19,7 +19,11 @@ Adapted from agent-documents/frontend/ui.md.
 - Pagination, sortable columns and URL-backed filters. Search across OCR, sender, filename/title, tags, folders and dates.
 - Distinguish `document date` from `uploaded date` in UI. Show OCR confidence/unreviewed fields and allow correction.
 - Empty states distinguish `nothing uploaded`, `no results` and `processing in progress`.
-- Download actions require server authorization and never expose permanent R2 links.
+- Download actions require server authorization and never expose Google OAuth tokens or public provider URLs.
+
+## Storage connection
+
+Settings show Google Drive as the connected default provider, linked account identifier, storage availability, connection status, reconnect/disconnect controls and last sync. Show missing and conflicting Drive files explicitly. Do not silently enable R2 or create public sharing links.
 
 ## Viewer and edit
 - PDF.js with page navigation/zoom and explicit download. Show a clear fallback if PDF is unreadable.
