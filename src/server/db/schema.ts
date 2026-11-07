@@ -123,6 +123,7 @@ export const uploadSessions = pgTable("upload_sessions", {
   expectedBytes: integer("expected_bytes").notNull(),
   expectedSha256: text("expected_sha256"),
   providerObjectId: text("provider_object_id"),
+  documentId: uuid("document_id").references(() => documents.id),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("uploads_owner_status_idx").on(t.userId, t.status)]);
