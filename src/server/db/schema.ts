@@ -80,6 +80,7 @@ export const folders = pgTable("folders", {
   parentId: uuid("parent_id"),
   name: text("name").notNull(),
   driveFolderId: text("drive_folder_id"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("folders_owner_parent_idx").on(t.userId, t.parentId)]);
 
@@ -123,6 +124,10 @@ export const uploadSessions = pgTable("upload_sessions", {
   status: varchar("status", { length: 24 }).notNull().default("pending"),
   expectedBytes: integer("expected_bytes").notNull(),
   expectedSha256: text("expected_sha256"),
+  title: text("title").notNull().default("Dokument"),
+  sender: text("sender"),
+  ocrText: text("ocr_text"),
+  folderId: uuid("folder_id").references(() => folders.id, { onDelete: "set null" }),
   providerObjectId: text("provider_object_id"),
   documentId: uuid("document_id").references(() => documents.id),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
