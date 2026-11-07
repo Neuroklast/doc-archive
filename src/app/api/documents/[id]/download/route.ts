@@ -4,7 +4,6 @@ import { getDb } from "@/server/db";
 import { documents, documentVersions, storageConnections } from "@/server/db/schema";
 import { googleDriveAdapter } from "@/server/google/drive-adapter";
 import { privateJson } from "@/server/http/security";
-import { pdfName } from "@/server/storage/limits";
 
 export const runtime = "nodejs";
 type Params = { params: Promise<{ id: string }> };

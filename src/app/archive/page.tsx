@@ -60,7 +60,7 @@ export default async function ArchivePage({ searchParams }: { searchParams: Sear
     }).from(uploadSessions).where(and(
       eq(uploadSessions.userId, userId),
       eq(uploadSessions.status, "uploading"),
-      gt(uploadSessions.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60_000)),
+      gt(uploadSessions.createdAt, sql`now() - interval '7 days'`),
     )).orderBy(desc(uploadSessions.createdAt)).limit(15),
   ]);
 
