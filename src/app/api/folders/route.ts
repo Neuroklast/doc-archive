@@ -42,7 +42,8 @@ export async function POST(request: Request) {
 
   const [saved] = await db.insert(folders).values({
     userId: session.user.id, name, parentId,
-  }).returning();
+  }).onConflictDoNothing().returning();
+  if (!saved) return privateJson({ error: "Dieser Ordner existiert bereits" }, 409);
   try {
     const result = await materializeFolder(session.user.id, saved.id);
     return privateJson({ folder: { id: result.id, name: result.name,
