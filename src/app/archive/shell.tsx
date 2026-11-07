@@ -302,7 +302,7 @@ export default function ArchiveShell(props: {
     {scannerOpen && <ScanDialog
       folders={sortedFolders.filter(folder => folder.ready)}
       initialFolderId={props.selectedFolderId}
-      onClose={() => setScannerOpen(false)}
+      onClose={() => { setScannerOpen(false); router.refresh(); }}
       onSaved={() => {
         setScannerOpen(false);
         setMessage("Dokument wurde in Google Drive archiviert.");
