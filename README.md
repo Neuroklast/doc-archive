@@ -2,7 +2,7 @@
 
 Private, Vercel-deployable document archive for scanned letters, photographs and PDFs.
 
-> **Status:** Architecture and development guidance only. No application, database, storage bucket or deployment has been provisioned yet.
+> **Status:** Phase 1 implementation on a feature branch: Next.js app shell, private Better Auth login and Google Drive OAuth linkage. PDF scanning, upload and search are not yet implemented. No cloud resources or deployment have been provisioned.
 
 ## Product goal
 
@@ -43,6 +43,6 @@ The initial, SDK-free server interface is in [src/server/storage/contracts.ts](s
 
 ## Development
 
-No build scripts exist yet. When scaffolding the app, add a lockfile and repeatable lint, typecheck, test and build commands. Don't claim that the app is deployed or that checks have passed before actually running them.
+The Next.js scaffold now provides `npm run lint`, `npm run typecheck`, `npm test` and `npm run build`. See [local setup](docs/LOCAL_SETUP.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [Google OAuth](docs/GOOGLE_OAUTH.md). The app requires a Neon database, the private owner and setup secrets, and Google Cloud OAuth web client credentials. The actual archive features are not yet implemented. Dependency lockfile generation remains a production-readiness task.
 
 Personal scans, generated PDFs, OCR content, backups, environment files and API credentials **must never be committed to Git**.
