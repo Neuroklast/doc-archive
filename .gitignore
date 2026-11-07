@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.vercel/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+coverage/
+.DS_Store
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+*.zip
+*.sqlite
